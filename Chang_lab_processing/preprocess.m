@@ -16,9 +16,9 @@ h5files=dir('*.h5');
 
 % get start and end times
 times=h5read(char(h5files(1).name), '/timestamp vector');
-globalStart=times(1);
+globalStart=times(1)+60600; %%%% CHANGED THIS! PUT IT BACK AFTERWARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 times=h5read(char(h5files(end).name), '/timestamp vector');
-globalEnd=times(end);
+globalEnd=globalStart + 40*60; % times(end);  %%%% CHANGED THIS! PUT IT BACK AFTERWARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
 clear times
 
 fprintf('Checking the sampling rate...\n')
@@ -40,10 +40,11 @@ n=info.Dataspace.Size(1);
 clear info
 
 % loop over time
-idx_save = 1; % savefile index 
-idx_load = 1; % load file index 
+idx_save = 101; % savefile index %%% CHANGED THIS!!! PUT IT BACK AFTERWARDS!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!!
+idx_load = 515-314; % 1; % load file index  %%% CHANGED THIS!!! PUT IT BACK AFTERWARDS!!!!!!!!!!!!!!!!!!!!!!!!
 startTime = globalStart;
 endTime = startTime + 12*60;
+
 
 while startTime < globalEnd
     tic
@@ -132,7 +133,7 @@ while startTime < globalEnd
     clear b a smallData
     
     % drop first and last minute (to reduce edge effects)
-    last = min((12*60*fs_orig), size(data,2));
+    last = min((11*60*fs), size(data,2));
     data=data(:, (1*60*fs+1):last);
     
     % common mean reference
