@@ -1,5 +1,6 @@
-function [eNames, eNums]= preprocessWrapper(montageSheet, folderList, newFs, ...
-    langGridFlag, ekgFlag, medianFlag)
+function [eNames, eNums, channelInds]= preprocessWrapper(montageSheet, folderList,...
+    newFs, langGridFlag, ekgFlag, medianFlag, savefolder,Nminperfile,...
+    Nmintrim,Flow,Fhigh)
 
 %% preprocessWrapper.m
 
@@ -7,8 +8,12 @@ function [eNames, eNums]= preprocessWrapper(montageSheet, folderList, newFs, ...
 
 % Created 03/29/2016
 %   - run a whole patient's worth of files through preprocess.m, then 
-%     reorganize using groupData. Automate as much as possible.
+%     reorganize using groupData.m
+%   - pulls out channel names and keep indices from given montage
+%     spreadsheet
 %   by KHPD
+%
+
 %%
 
 % fill in missing parameters
@@ -16,10 +21,25 @@ n=nargin;
 if n<1 || isempty(montageSheet)
     error('montageSheet is a required parameter')
 end
-if n<6 || isempty(medianFlag)
-    medianFlag=0;
+if n<11 % let preprocess set medianFlag thru Fhigh to default if not given
+    Fhigh = [];
 end
-if n<5 || isempty(ekgFlag)
+if n<10
+    Flow = [];
+end
+if n<9
+    Nmintrim = [];
+end
+if n<8
+    Nminperfile = [];
+end
+if n<7
+    savefolder = [];
+end
+if n<6 
+    medianFlag=[];
+end
+if n<5 || isempty(ekgFlag) % these ones need defaults to use here
     ekgFlag=0;
 end
 if n<4 || isempty(langGridFlag)
@@ -38,17 +58,43 @@ clear n
 [eNames, eNums] = getElectrodeNames(montageSheet);
 
 % figure out 'keep' indices for preprocess.m
+channelInds = getKeepRange(eNames, langGridFlag, ekgFlag);
 
 % loop over folders
 for j=1:length(folderList)
     % run preprocess.m
-
+    preprocess(channelInds,newFs,char(folderList(j).name),savefolder,...
+        Nminperfile,Nmintrim,Flow,Fhigh,medianFlag)
+    
     % run groupData.m
 end
 
 end
 
 %% HELPER FUNCTIONS
+
+function channelInds = getKeepRange(eNames, langGridFlag, ekgFlag)
+% Assumes that channel organization is
+%       Language Grid
+%       Other neural channels
+%       EKG channels
+%       Empty channels
+
+if langGridFlag == 1
+    first = 1;
+else
+    first = find(~strcmp(eNames,'L64Contact'),1,'first');
+end
+
+if ekgFlag
+    last = size(eNames,1);
+else
+    last = find(~strcmp(eNames,'EKG'),1,'last');
+end
+
+channelInds = [first last];
+
+end
 
 function [eNames, eNums] = getElectrodeNames(montageSheet)
 % call xlsread to get the spreadsheet as text
