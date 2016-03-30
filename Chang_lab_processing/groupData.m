@@ -1,52 +1,38 @@
-function groupData(ofc_idx, am_idx, hp_idx, acc_idx)
-% make dirs to store .mat files
-mkdir('mat_AmHpOFC')
+function groupData(filedir,preprocessfolder,eNames,eNums,channelInds)
 
-% get the prefix for this set of files
-[~,prefix,~] = fileparts(pwd);
+fprintf('groupData.m: Initializing...\n')
+
+% get list of the files made by preprocess.m
+shortMatFiles=dir(sprintf('%s/%s/*.mat',filedir,preprocessfolder));
 
 
-% get list of the files we just made
-shortMatFiles=dir('mat_allChannels/*.mat');
+% make dirs to store regrouped files
+mkdir(sprintf('%s/mat_oneStruct',filedir));
 
 % loop over all channel .mat files
-for j=1:3:length(shortMatFiles)
+for j=1:length(shortMatFiles)
     
-    fprintf('Loading mat_allChannels/%s_all_%03d, %03d, %03d...\n',prefix, j, j+1, j+2)
+    fprintf('\tLoading %s/%s/%s_all_%03d...\n',filedir,preprocessfolder, filedir, j)
     
-    % load in three files
-    d2=[]; d3=[];   
-    d1=importdata(sprintf('mat_allChannels/%s_all_%03d.mat',prefix,j));
-    try
-        d2=importdata(sprintf('mat_allChannels/%s_all_%03d.mat',prefix,j+1));
-        try
-            d3=importdata(sprintf('mat_allChannels/%s_all_%03d.mat',prefix,j+2));
-        catch
-            fprintf('mat_AmHpOFC/%s_%03d.mat will only be 20 min long.\n',prefix,ceil(j/3))
-        end
-    catch
-        fprintf('mat_AmHpOFC/%s_%03d.mat will only be 10 min long.\n', prefix, ceil(j/3))
-    end
+    % load in data
+    d1=importdata(sprintf('%s/%s/%s_all_%03d.mat',filedir,preprocessfolder,filedir,j));
+ 
+    % reorganize data
+    data.signal = d1.data;
+    data.fs = d1.fs;
+    data.startTime = d1.startTime;
+    clear d1
     
-    
-    % concatenate, keeping only Am, Hp, OFC
-    data = [d1.data, d2.data, d3.data];
-    fs = d1.fs;
-    clear d1 d2 d3
-    
-    am=data(am_idx(1):am_idx(2),:);
-    hp=data(hp_idx(1):hp_idx(2),:);
-    ofc=data(ofc_idx(1):ofc_idx(2),:);
-    acc=data(acc_idx(1):acc_idx(2),:);
-    clear data
+    data.channelNames = eNames(channelInds(1):channelInds(2));
+    data.channelNums = eNums(channelInds(1):channelInds(2));
     
     % save .mat file
-    fprintf('Saving mat_AmHpOFCACC/%s_%03d.mat\n',prefix, ceil(j/3))
+    fprintf('\tSaving mat_oneStruct/%s_%03d.mat\n',filedir, j)
     
-    save(sprintf('mat_AmHpOFCACC/%s_%03d.mat',prefix,ceil(j/3)), 'am', 'hp', 'ofc', 'acc','fs');
-    clear am hp ofc
+    save(sprintf('%s/mat_oneStruct/%s_%03d.mat',filedir,filedir,j), 'data');
+    
 end
 
-fprintf('All done!\n')
+fprintf('\tAll done!\n')
 
 end

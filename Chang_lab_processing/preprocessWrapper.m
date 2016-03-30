@@ -1,5 +1,5 @@
-function [eNames, eNums, channelInds]= preprocessWrapper(montageSheet, folderList,...
-    newFs, langGridFlag, ekgFlag, medianFlag, savefolder,Nminperfile,...
+function preprocessWrapper(montageSheet, folderList,...
+    newFs, langGridFlag, ekgFlag, medianFlag, preprocessfolder,Nminperfile,...
     Nmintrim,Flow,Fhigh)
 
 %% preprocessWrapper.m
@@ -21,23 +21,23 @@ n=nargin;
 if n<1 || isempty(montageSheet)
     error('montageSheet is a required parameter')
 end
-if n<11 % let preprocess set medianFlag thru Fhigh to default if not given
-    Fhigh = [];
+if n<11
+    Fhigh = []; % let preprocess.m set default
 end
 if n<10
-    Flow = [];
+    Flow = []; % let preprocess.m set default
 end
 if n<9
-    Nmintrim = [];
+    Nmintrim = []; % let preprocess.m set default
 end
 if n<8
-    Nminperfile = [];
+    Nminperfile = []; % let preprocess.m set default
 end
-if n<7
-    savefolder = [];
+if n<7 || isempty(preprocessfolder)
+    preprocessfolder = 'mat_allChannels'; % groupData needs to know this
 end
 if n<6 
-    medianFlag=[];
+    medianFlag=[]; % let preprocess.m set default
 end
 if n<5 || isempty(ekgFlag) % these ones need defaults to use here
     ekgFlag=0;
@@ -62,11 +62,18 @@ channelInds = getKeepRange(eNames, langGridFlag, ekgFlag);
 
 % loop over folders
 for j=1:length(folderList)
+    fprintf('processing folder %s',char(folderList(j).name))
+    
     % run preprocess.m
-    preprocess(channelInds,newFs,char(folderList(j).name),savefolder,...
+    tic
+    preprocess(channelInds,newFs,[char(folderList(j).name),'/'],preprocessfolder,...
         Nminperfile,Nmintrim,Flow,Fhigh,medianFlag)
+    toc
     
     % run groupData.m
+    tic
+    groupData(char(folderList(j).name),preprocessfolder,eNames,eNums,channelInds)
+    toc
 end
 
 end

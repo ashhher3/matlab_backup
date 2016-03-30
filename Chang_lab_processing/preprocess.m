@@ -40,6 +40,9 @@ function preprocess(channelInds,fs,filedir,savefolder,Nminperfile,...
 %-------------------------------------------------------------------------%
 % Revised: 03/29/16 (KHPD)
 %   -tweaked parameters and added some input checking
+%   -changed some of the print statements
+%   -removed the tic toc
+%   -reverted the name of the saved data to 'data' from 'smallData'
 % Revised: 03/28/16 (JGM)
 %   -functionized
 % Revised: 03/25/16 (JGM)
@@ -57,14 +60,14 @@ function preprocess(channelInds,fs,filedir,savefolder,Nminperfile,...
 %-------------------------------------------------------------------------%
 %%
 
-fprintf('Initializing...\n')
+fprintf('preprocess.m: Initializing...\n')
 
 % fill in missing parameters
 n=nargin;
 if n<2
     error('channelInds and fs are required inputs\n')
 end
-if N<9 || isempty(medianFlag)
+if n<9 || isempty(medianFlag)
     medianFlag = 0;
 end
 if n<8 || isempty(Fhigh)
@@ -74,7 +77,7 @@ if n<7 || isempty(Flow)
     Flow = 1;
 end
 if n<6 || isempty(Nmintrim)
-    Nmintrim = 40;
+    Nmintrim = 1;
 end
 if n<5 || isempty(Nminperfile)
     Nminperfile = 12;
@@ -114,13 +117,13 @@ mkdir([filedir,savefolder])
 h5files = dir([filedir,'*.h5']);
 
 % get start and end times
-globalStart = h5read([filedir,h5files(1).name], '/timestamp vector',1,1);
+globalStart = h5read([filedir,h5files(1).name], '/timestamp vector', 1,1);
 info = h5info([filedir,h5files(end).name],'/timestamp vector');
-globalEnd = h5read([filedir,h5files(end).name], '/timestamp vector',info.Dataspace.Size,1);
+globalEnd = h5read([filedir,h5files(end).name], '/timestamp vector',info.Dataspace.Size,1,1);
 
 
 % loop over h5 files
-fprintf('Checking the sampling rate...\n')
+fprintf('\tChecking the sampling rate...\n')
 fs_orig = h5readatt([filedir,h5files(1).name], '/ECoG Array', 'Sampling Rate');
 for j = 2:length(h5files)
     % check that sampling rates match and set Fs
@@ -149,10 +152,10 @@ end
 
 % loop over time
 while (startTime < globalEnd) && (idx_load <= length(h5files))
-    tic
+    
     
     % init indices
-    fprintf('Loading new data for file %03d...\n',idx_save)
+    fprintf('\tLoading new data for file %03d...\n',idx_save)
     idx_nan = 1; % index of first column to rewrite
     t0 = startTime;
     
@@ -177,7 +180,7 @@ while (startTime < globalEnd) && (idx_load <= length(h5files))
     last = min((Nminperfile*60*fs_orig), size(data,2));
     
     % filter each channel consecutively
-    fprintf('Filtering and downsampling each channel...\n')
+    fprintf('\tFiltering and downsampling each channel...\n')
     for k = 1:size(data,1)
         smallData(k,:) = standardFilters(data(k,1:last),...
             fs_orig, fs, Flow, Fhigh);
@@ -193,15 +196,15 @@ while (startTime < globalEnd) && (idx_load <= length(h5files))
     startTime = startTime + (Nminperfile - 2*Nmintrim)*60;
     endTime = startTime + Nminperfile*60;
     while t0 > startTime % rewind idx_load to new startTime
-        fprintf('rewinding...\n');
+        fprintf('\trewinding...\n');
         idx_load = idx_load - 1;
         t0 = h5read([filedir,h5files(idx_load).name], '/timestamp vector',1,1);
     end
-    toc
+    
 
 end
 %clear data idx k h5files keep n
-fprintf('All done!\n')
+fprintf('\tAll done!\n')
 
 end
 
@@ -270,29 +273,29 @@ end
 
 
 %-------------------------------------------------------------------------%
-function trimAndSave(smallData,startTime,Nminperfile,Nmintrim,fs,...
+function trimAndSave(data,startTime,Nminperfile,Nmintrim,fs,...
     filedir,savefolder,prefix,idx_save,medianFlag)
 
 %%%% presumably this is for screwed up channelData.....
 % delete any extra columns
-smallData(:,isnan(smallData(1,:)))=[];
+data(:,isnan(data(1,:)))=[];
 %%%%
 
 % drop first and last minute (to reduce edge effects)
-last = min((Nminperfile-Nmintrim)*60*fs, size(smallData,2));
-smallData = smallData(:, (Nmintrim*60*fs+1):last);
+last = min((Nminperfile-Nmintrim)*60*fs, size(data,2));
+data = data(:, (Nmintrim*60*fs+1):last);
 
 % common mean reference
 if medianFlag==1
-    smallData = bsxfun(@minus,smallData,median(smallData));
+    data = bsxfun(@minus,data,median(data));
 else
-    smallData = bsxfun(@minus,smallData,mean(smallData));
+    data = bsxfun(@minus,data,mean(data));
 end
 
 % save .mat file (now Nminperfile long and preprocessed)
-fprintf('Saving file...\n')
+fprintf('\tSaving file %03d...\n',idx_save)
 filename = sprintf('%s%s/%s_all_%03d.mat',filedir,savefolder,prefix,idx_save);
-save(filename,'smallData', 'fs','startTime');
+save(filename,'data', 'fs','startTime');
 
 end
 %-------------------------------------------------------------------------%
