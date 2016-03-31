@@ -189,8 +189,7 @@ while (startTime < globalEnd) && (idx_load <= length(h5files))
     % trim, save, increment the file counter
     trimAndSave(smallData,startTime,Nminperfile,Nmintrim,fs,...
         filedir,savefolder,prefix,idx_save, medianFlag);
-    idx_save = 1 + idx_save;
-    
+    idx_save = 1 + idx_save;   
     
     % find *next* start and end times
     startTime = startTime + (Nminperfile - 2*Nmintrim)*60;
@@ -201,9 +200,8 @@ while (startTime < globalEnd) && (idx_load <= length(h5files))
         t0 = h5read([filedir,h5files(idx_load).name], '/timestamp vector',1,1);
     end
     
-
 end
-%clear data idx k h5files keep n
+
 fprintf('\tAll done!\n')
 
 end
