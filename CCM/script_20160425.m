@@ -1,5 +1,6 @@
 %% load in some data
-
+idx = [65, 96; 149, 158; 159, 168];
+idx = idx-64;
 ofc = []; am=[]; hp=[];
 
 for f=1:6
@@ -9,7 +10,7 @@ am = [am, mean(data(idx(2,1):idx(2,2),:))];
 hp = [hp, mean(data(idx(3,1):idx(3,2),:))];
 end
 
-%% for test out a couple values of E, make plots
+%% first test out a couple values of E, make plots
 
 E = 10;
 tau = 20;
@@ -36,11 +37,12 @@ hold off
 %% look for convergence
 
 minL = 1000;
-minE = 30;
+minE = 19;
 maxE = 30;
 
 for E = minE:maxE
     for tau = [E+2, 2*E, 40];
+        minL = (tau +1)*E -2 + tau;
         rhoOFCxmapHp = []; %nan(maxE - minE+1, length(ofc)-minL);
         rhoHpxmapOFC = []; % nan(maxE - minE+1, length(ofc)-minL);
         
