@@ -1,13 +1,16 @@
-function [ Xself, Yest, Xest, Mx, My ] = CCM( X, Y, E, tau )
-%UNTITLED2 Summary of this function goes here
+function [ Xest, Yest, Xself, Yself, Mx, My ] = CCM( X, Y, E, tau )
+% CCM Summary of this function goes here
 %   Detailed explanation goes here
+
+% 20160502 - CHANGED ORDER OF OUTPUTS!!
 
 % make the time-lagged manifolds
 Mx = makeShadowManifold(X, E, tau);
 My = makeShadowManifold(Y, E, tau);
 
-% check how well Mx estimates itself with this E and this tau
+% check how well data estimates itself with this E and this tau
 Xself = crossMap(Mx, Mx, E);
+Yself = crossMap(My, My, E);
 
 % do cross-mapping
 Yest = crossMap(Mx, My, E);

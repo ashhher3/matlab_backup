@@ -39,3 +39,8 @@ Thumbs.db
 # Auto-save files #
 ###################
 *~
+
+# data shouldn't be put on github #
+###################################
+*.mat
+*.h5

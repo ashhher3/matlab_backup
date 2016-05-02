@@ -1,3 +1,8 @@
+%%
+
+% script for doing CCM with subnets data, original version 20160425 KHPD
+% 20160502 adjusted for change in CCM output order - KD
+
 %% load in some data
 idx = [65, 96; 149, 158; 159, 168];
 idx = idx-64;
@@ -20,7 +25,7 @@ L = 10000;
 X = ofc(1:L)';
 Y = hp(1:L)';
 
-[ Xself, Yest, Xest, Mx, My ] = CCM( X, Y, E, tau );
+[ Xest, Yest, Xself, Yself, Mx, My ] = CCM( X, Y, E, tau );
 
 
 figure()
@@ -50,7 +55,7 @@ for E = minE:maxE
             % do xmap with ofc as x and hp as Y
             X = ofc(1:L)';
             Y = hp(1:L)';
-            [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+            [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
             
             R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
             rhoOFCxmapHp = [rhoOFCxmapHp, R(1,2)];

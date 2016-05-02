@@ -1,3 +1,7 @@
+%%
+% script for doing CCM on subnets data, original version 20160426 KHPD
+% 20160502 adjusted code for change in order of CCM.m outputs - KHPD
+
 %% load data and trim
 
 idx = [65, 96; 149, 158; 159, 168; 179, 188];
@@ -22,14 +26,14 @@ clear idx last f data
 
 %% set params and initialize variables
 
-E = 30;
+E = 10;
 tau = 30;
 minL = (tau +1)*E + 2 - tau;
 n = 100;
 maxL = length(ofc)/n;
 
 startIdx = 1:maxL:length(ofc);
-Lvals = minL:100:maxL;
+Lvals = [minL:100:maxL, maxL];
 
 OxmapA = NaN(n, length(Lvals));
 AxmapO = NaN(n, length(Lvals));
@@ -53,12 +57,11 @@ for i = 1:length(Lvals)
         L = Lvals(i);
         start = startIdx(j);
         
-        fprintf('L = %d, iteration %d\n', L, j);
-        
+        fprintf('L = %d, iteration %d\n', L, j); 
         % xmap OFC & Am
         X = ofc(start:start+L-1)';
         Y = am(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         AxmapO(j,i) = R(1,2);
@@ -69,7 +72,7 @@ for i = 1:length(Lvals)
         % xmap OFC & Hp
         X = ofc(start:start+L-1)';
         Y = hp(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         HxmapO(j,i) = R(1,2);
@@ -80,7 +83,7 @@ for i = 1:length(Lvals)
         % xmap Hp & Am
         X = hp(start:start+L-1)';
         Y = am(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         AxmapH(j,i) = R(1,2);
@@ -91,7 +94,7 @@ for i = 1:length(Lvals)
         % xmap ACC & OFC
         X = acc(start:start+L-1)';
         Y = ofc(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         OxmapC(j,i) = R(1,2);
@@ -102,7 +105,7 @@ for i = 1:length(Lvals)
         % xmap ACC & Am
         X = acc(start:start+L-1)';
         Y = am(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         AxmapC(j,i) = R(1,2);
@@ -113,7 +116,7 @@ for i = 1:length(Lvals)
         % xmap ACC & Hp
         X = acc(start:start+L-1)';
         Y = hp(start:start+L-1)';
-        [ ~, Yest, Xest, ~, ~ ] = CCM( X, Y, E, tau );
+        [ Xest, Yest, ~, ~, ~, ~ ] = CCM( X, Y, E, tau );
         
         R = corrcoef(X(size(X,1)-size(Xest,1)+1:end), Xest);
         HxmapC(j,i) = R(1,2);
@@ -122,7 +125,7 @@ for i = 1:length(Lvals)
         CxmapH(j,i) = R(1,2);
         
     end
-    save('20160428_EC108_CCM.mat')
+    save('20160428_EC108_CCM_E10.mat')
 end
 
 matlabmail('kderosier6@gmail.com', 'CCM is done', 'CCM is done')
