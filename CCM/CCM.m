@@ -1,53 +1,112 @@
-function [ Xest, Yest, Xself, Yself, Mx, My ] = CCM( X, Y, E, tau )
-% CCM Summary of this function goes here
-%   Detailed explanation goes here
+function [ XxmapY, YxmapX, Lvals, startIdx ] = CCM( X, Y, E, tau, n, maxL, Lskip )
+%% CCM.m Tests for causality between data series X and Y using convergent cross-mapping
+%   Inputs: X, Y - data series of same length that may be causally related.
+%                  Should be column vectors, but I will flip them for you.
+%           E    - embedding dimension, ie, dimension of underlying
+%                  dynamics, use testE.m to help choose
+%           tau  - time lag to use when making shadow manifolds, measured
+%                  in number of samples, NOT SECONDS
+%           n    - number of segments to test and average over
+%           maxL - maximum length of data to test, OPTIONAL, default is
+%                  length(X)/n
+%           Lskip- step between values of L to test, OPTIONAL, default is 1
+%
+%   Outputs: XxmapY - matrix of corrcoef values for predicting Y from X
+%                     each row is a diff starting point in orginal data
+%                     each column is a different value of L
+%           YxmapX  - same as XxmapY but predicting X from Y
+%           Lvals   - vector of L values used, measured in samples
+%           startIdx - indices of original data X and Y used as starting
+%                    points
 
+%% Changelog
+% initial version written 20160420 by KHPD, based on Sugihara et al 2012
+%
 % 20160502 - CHANGED ORDER OF OUTPUTS!!
+% 20160505 - removed self-mapping part (redundant with
+%               testShadowManifold.m)
+%            removed makeShadowManifold as subfunction since it is a
+%               separate .m file now
+% 20160506 - reworked to actually do convergence test 
+%            changed inputs/outputs, incompatible w earlier scripts
+%            removed crossMap as subfunction
+%            
 
-% make the time-lagged manifolds
-Mx = makeShadowManifold(X, E, tau);
-My = makeShadowManifold(Y, E, tau);
+%%
 
-% check how well data estimates itself with this E and this tau
-Xself = crossMap(Mx, Mx, E);
-Yself = crossMap(My, My, E);
-
-% do cross-mapping
-Yest = crossMap(Mx, My, E);
-Xest = crossMap(My, Mx, E);
-
+% do some input checking
+if isrow(X)
+    X = X';
+end
+if isrow(Y)
+    Y = Y';
+end
+if ~(iscolumn(X) && iscolumn(Y))
+    error('X and Y must be 1-dimensional data series.')
+end
+if ~(length(X) == length(Y))
+    warning('X and Y are different lengths, are you sure about this?\n')
+end
+if E<=1
+    error('E must be >=2')
+end
+if tau<1
+    error('tau is measured in samples and must be >=1')
+end
+if isempty(maxL)
+    maxL = floor(length(X)/n);
+end
+if n*maxL > length(X)
+    error('To test n=%d segments of length maxL=%d, need %d samples, you gave %d.',n, maxL, n*maxL, length(X))
+end
+if isempty(Lskip)
+    Lskip = 1;
 end
 
-function Yest = crossMap(Mx, My, E)
-Yest = NaN( size(My, 1), 1);
+% initialize variables
+minL = (tau +1)*E + 2 - tau;
+Lvals = [minL:Lskip:maxL, maxL]; % test maxL even if Lskip doesn't hit it
+startIdx = 1:maxL;length(X);
+startIdx = startIdx(1:n);
+XxmapY = NaN(n, length(Lvals));
+YxmapX = NaN(n, length(Lvals));
 
-% get E+1 nearest neighbors for all points in Mx
-[N, D] = knnsearch(Mx, Mx,'k',E+2);
-N = N(:,2:end); %nearest nbr is the point itself, so throw out 1st clm
-D = D(:,2:end);
-
-% compute weights
-W=NaN(1, size(D,2));
-% seems like should be possible to do this without a loop but I can't
-% figure out how to do the indices.....
-for i = 1:size(Mx, 1)
-    W = exp( -1*(D(i,:)) / (D(i,1)));
-    W = W / sum(W);
-    Yest(i) = W*My(N(i,:),1);
-end
-
-
-end
-
-function Mx = makeShadowManifold( X , E, tau)
-L = length(X);
-tstart = 1+(E-1)*tau;
-Mx = NaN( (L-tstart), E);
-
-for t=tstart:L
-    for j=0:E-1
-        Mx(t-tstart+1,j+1) = X(t-j*tau);
+% loop over start points
+for j = 1:length(startIdx)
+    % set start idx
+    start = startIdx(j);
+    
+    % loop over Lvals backwards
+    for i = length(Lvals):-1:1
+        % set L
+        L = Lvals(i);
+        
+        fprintf('starting point %d, L = %d\n', j, L); 
+      
+        % if L is max L, make biggest shadow manifold
+        if L==maxL
+            Mx = makeShadowManifold( X(start:start+L-1), E, tau);
+            My = makeShadowManifold( Y(start:start+L-1), E, tau);
+        else % trim off Lskip many points from the end
+            Mx = Mx(1:end-Lskip,:);
+            My = My(1:end-Lskip,:);
+        end
+        
+        % do cross mapping
+        Xest = crossMap(My, Mx, E);
+        Yest = crossMap(Mx, My, E);
+        
+        % compute corrcoef for Xtrue & Xest, and store in YxmapX
+        R = corrcoef(Mx(1:end,1), Xest);
+        YxmapX(j,i) = R(1,2);
+        
+        % compute corrcoef for Xest & Xtrue, and store in XxmapY
+        R = corrcoef(My(1:end,1), Yest);
+        XxmapY(j,i) = R(1,2);
+        
     end
 end
+    
+
 
 end
