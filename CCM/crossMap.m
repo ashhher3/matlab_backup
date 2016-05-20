@@ -7,6 +7,7 @@ function Yest = crossMap(Mx, My, E)
 %% Changelog
 % based on Sugihara et al 2012
 % pulled out from CCM.m and turned into own file 20160502 KHPD
+% removed loop when computing weights 20160520 KHPD
 
 %%
 
@@ -19,13 +20,17 @@ D = D(:,2:end);
 
 % compute weights
 W=NaN(1, size(D,2));
-% seems like should be possible to do this without a loop but I can't
-% figure out how to do the indices.....
-for i = 1:size(Mx, 1)
-    W = exp( -1*(D(i,:)) / (D(i,1)));
-    W = W / sum(W);
-    Yest(i) = W*My(N(i,:),1);
-end
+W = exp(-1.*bsxfun(@rdivide, D, D(:,1)));
+W = bsxfun(@rdivide, W, sum(W,2));
+Yest = dot(W,reshape(My(N,1),size(D)),2);
+
+
+
+% for i = 1:size(Mx, 1)
+%     W = exp( -1*(D(i,:)) / (D(i,1)));
+%     W = W / sum(W);
+%     Yest(i) = W*My(N(i,:),1);
+% end
 
 
 end

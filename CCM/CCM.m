@@ -30,6 +30,7 @@ function [ XxmapY, YxmapX, Lvals, startIdx ] = CCM( X, Y, E, tau, n, maxL, Lskip
 % 20160506 - reworked to actually do convergence test 
 %            changed inputs/outputs, incompatible w earlier scripts
 %            removed crossMap as subfunction
+% 20160519 - moved print statement to outer loop
 %            
 
 %%
@@ -76,12 +77,12 @@ for j = 1:length(startIdx)
     % set start idx
     start = startIdx(j);
     
+    fprintf('starting point %d\n', j); 
+    
     % loop over Lvals backwards
     for i = length(Lvals):-1:1
         % set L
         L = Lvals(i);
-        
-        fprintf('starting point %d, L = %d\n', j, L); 
       
         % if L is max L, make biggest shadow manifold
         if L==maxL

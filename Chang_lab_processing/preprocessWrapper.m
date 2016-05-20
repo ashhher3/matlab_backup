@@ -1,7 +1,6 @@
-function preprocessWrapper(montageSheet, folderList,...
+function preprocessWrapper(montageFile,folderList,...
     newFs, langGridFlag, ekgFlag, medianFlag, preprocessfolder,Nminperfile,...
     Nmintrim,Flow,Fhigh)
-
 %% preprocessWrapper.m
 
 %% CHANGE LOG
@@ -13,13 +12,15 @@ function preprocessWrapper(montageSheet, folderList,...
 %     spreadsheet
 %   by KHPD
 %
+% 20160512 KHPD - edited to handle electrode montages stored as .mat files
+%
 
 %%
 
 % fill in missing parameters
 n=nargin;
-if n<1 || isempty(montageSheet)
-    error('montageSheet is a required parameter')
+if n<1 || isempty(montageFile)
+    error('montageFile is a required parameter')
 end
 if n<11
     Fhigh = []; % let preprocess.m set default
@@ -55,14 +56,14 @@ end
 clear n
 
 % read in montageSheet and get variable names
-[eNames, eNums] = getElectrodeNames(montageSheet);
+[eNames, eNums] = getElectrodeNames(montageFile);
 
 % figure out 'keep' indices for preprocess.m
 channelInds = getKeepRange(eNames, langGridFlag, ekgFlag);
 
 % loop over folders
 for j=1:length(folderList)
-    fprintf('processing folder %s',char(folderList(j).name))
+    fprintf('processing folder %s\n',char(folderList(j).name))
     
     % run preprocess.m
     tic
@@ -90,7 +91,7 @@ function channelInds = getKeepRange(eNames, langGridFlag, ekgFlag)
 if langGridFlag == 1
     first = 1;
 else
-    first = find(~strcmp(eNames,'L64Contact'),1,'first');
+    first = max(find(~strcmp(eNames,'L64Contact'),1,'first'),find(~strcmp(eNames,'64'),1,'first'));
 end
 
 if ekgFlag
@@ -103,9 +104,21 @@ channelInds = [first last];
 
 end
 
-function [eNames, eNums] = getElectrodeNames(montageSheet)
-% call xlsread to get the spreadsheet as text
-[~, txt, ~] = xlsread(montageSheet);
+function [eNames, eNums] = getElectrodeNames(montageFile)
+% figure out if montage saved as spreadsheet or .mat
+[~, ~, ext]=fileparts(montageFile);
+
+if strcmp(ext, '.xlsx')
+    % call xlsread to get the spreadsheet as text
+    [~, txt, ~] = xlsread(montageFile);
+elseif strcmp(ext, '.mat')
+    % then it lives in the 'anatomy' variable
+    load(montageFile,'anatomy');
+    txt=anatomy;
+    clear anatomy
+else
+    error('montageFile must be .xlsx or .mat')
+end
 
 % initialize arrays to hold electrode info
 n=size(txt,1);
