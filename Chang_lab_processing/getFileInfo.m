@@ -1,5 +1,4 @@
-folders = {'EC108_2fd7f1ac';'EC108_9ae22432';'EC108_e6336384'; ...
-    'EC108_03c06afe';'EC108_ff348c69';'EC108_8337e405';'EC108_cd686c40'};
+folders = {'EC104_d653952f'};
 timelist=struct([]);
 
 for d=1:length(folders)

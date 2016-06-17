@@ -54,8 +54,14 @@ end
 if tau<1
     error('tau is measured in samples and must be >=1')
 end
+if isempty(n) && isempty(maxL)
+    error('You must provide either n or maxL')
+end
 if isempty(maxL)
     maxL = floor(length(X)/n);
+end
+if isempty(n)
+    n = floor(length(X)/maxL);
 end
 if n*maxL > length(X)
     error('To test n=%d segments of length maxL=%d, need %d samples, you gave %d.',n, maxL, n*maxL, length(X))
@@ -67,7 +73,7 @@ end
 % initialize variables
 minL = (tau +1)*E + 2 - tau;
 Lvals = [minL:Lskip:maxL, maxL]; % test maxL even if Lskip doesn't hit it
-startIdx = 1:maxL;length(X);
+startIdx = 1:maxL:length(X);
 startIdx = startIdx(1:n);
 XxmapY = NaN(n, length(Lvals));
 YxmapX = NaN(n, length(Lvals));

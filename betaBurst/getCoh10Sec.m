@@ -1,4 +1,4 @@
-function [ bCoh ] = getCoh10Sec( chan1, chan2, Fs )
+function [ bCoh ] = getCoh10Sec( chan1, chan2, Fs)
 
 w=10*Fs; % 10sec is w samples long
 
